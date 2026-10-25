@@ -77,6 +77,7 @@
          * The remote submix module "audio.r_submix.default" must be installed on the device.
          * The device must be provisioned with HDCP keys (for protected content).
     -->
+    <bool name="config_wifiSaeUpgradeEnabled">false</bool>
     <bool name="config_enableWifiDisplay">false</bool>
 
     <!-- IWLAN data service package name to bind to by default. If none is specified in an overlay, an

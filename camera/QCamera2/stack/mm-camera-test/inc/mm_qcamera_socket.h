@@ -31,6 +31,12 @@
 #define __MM_QCAMERA_SOCKET_H__
 
 // System dependencies
+#include <bits/in_addr.h>
+#include <linux/libc-compat.h>
+
+/* Bionic already defines struct in_addr. */
+#undef __UAPI_DEF_IN_ADDR
+#define __UAPI_DEF_IN_ADDR 0
 #include <arpa/inet.h>
 
 #undef __FD_SET

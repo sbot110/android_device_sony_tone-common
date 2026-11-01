@@ -192,7 +192,7 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-impl \
     android.hardware.drm@1.0-service \
     android.hardware.drm@1.1.vendor \
-    android.hardware.drm@1.4-service.clearkey
+    android.hardware.drm-service.clearkey
 
 # Fingerprint
 PRODUCT_PACKAGES += \
@@ -427,9 +427,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     thermanager
 
-# Trust HAL
-PRODUCT_PACKAGES += \
-    vendor.lineage.trust@1.0-service
+# Trust HAL: legacy service unavailable in LOS21.
+# Revisit functionality before release.
 
 # USB
 PRODUCT_PACKAGES += \
@@ -454,7 +453,7 @@ PRODUCT_PACKAGES += \
 
 # WiFi
 PRODUCT_PACKAGES += \
-    android.hardware.wifi@1.0-service \
+    android.hardware.wifi-service \
     hostapd \
     libcld80211 \
     libwifi-hal-bcm \
@@ -470,6 +469,15 @@ PRODUCT_COPY_FILES += \
 # WiFi BCM configurations
 $(call inherit-product, hardware/broadcom/wlan/bcmdhd/config/config-bcm.mk)
 
-# Variant linking script
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/releasetools/updater.sh:install/bin/updater.sh
+# Legacy OEM variant updater excluded: OEM contains read-only SquashFS Vendor.
+
+# Select the Sony/Qualcomm Adreno EGL implementation.
+PRODUCT_VENDOR_PROPERTIES += ro.hardware.egl=adreno
+
+# DORA21: compatibility library for legacy Qualcomm RIL
+PRODUCT_PACKAGES += \
+    libprotobuf-cpp-full-3.9.1-vendorcompat
+
+# DORA21: legacy Qualcomm HIDL ABI compatibility
+PRODUCT_PACKAGES += \
+    libhidlbase_shim

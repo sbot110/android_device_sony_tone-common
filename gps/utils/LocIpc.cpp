@@ -36,6 +36,7 @@
 #include <log_util.h>
 #include <LocIpc.h>
 #include <algorithm>
+#include <utility>
 
 using namespace std;
 
@@ -300,7 +301,7 @@ public:
     inline LocIpcRunnable(LocIpc& locIpc, unique_ptr<LocIpcRecver>& ipcRecver) :
             mAbortCalled(false),
             mLocIpc(locIpc),
-            mIpcRecver(move(ipcRecver)) {}
+            mIpcRecver(std::move(ipcRecver)) {}
     inline bool run() override {
         if (mIpcRecver != nullptr) {
             mLocIpc.startBlockingListening(*(mIpcRecver.get()));

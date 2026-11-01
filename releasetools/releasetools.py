@@ -21,4 +21,6 @@ import re
 import os
 
 def FullOTA_InstallEnd(info):
-  info.script.AppendExtra('run_program("/tmp/install/bin/updater.sh");')
+  # Legacy OEM is read-only SquashFS mounted as /vendor.
+  # The old variant updater must not modify /oem/build.prop.
+  pass

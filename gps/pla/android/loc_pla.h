@@ -39,7 +39,8 @@ extern "C" {
 #endif
 
 #include <cutils/properties.h>
-#include <cutils/threads.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <cutils/sched_policy.h>
 #include <cutils/android_filesystem_config.h>
 #include <string.h>

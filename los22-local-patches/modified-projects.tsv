@@ -1,0 +1,5 @@
+hardware/qcom/bt	73ebd37e38a2d996323eaa18a5df079d739faee2	tracked/hardware__qcom__bt.patch
+prebuilts/vndk/v28	682bb53451739cc166c4cbcb08ef0a4891f076af	tracked/prebuilts__vndk__v28.patch
+prebuilts/vndk/v29	cfdf43fa212a07b9d503d22eced30cfc55dcf677	tracked/prebuilts__vndk__v29.patch
+system/memory/lmkd	4812ac8dbb7efa0bc01789d80ee7604e456f10f5	tracked/system__memory__lmkd.patch
+vendor/lineage	87f03bdeafbf22dc35130c61ae2ff97f2041b90f	tracked/vendor__lineage.patch

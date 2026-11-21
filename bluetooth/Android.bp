@@ -1,0 +1,5 @@
+// Sony tone (dora F8131/F8132): use device-specific Broadcom UART configuration.
+filegroup {
+    name: "dora_v10_bt_config",
+    srcs: ["vnd_generic.txt"],
+}

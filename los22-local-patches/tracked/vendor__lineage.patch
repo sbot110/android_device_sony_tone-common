@@ -1,0 +1,15 @@
+diff --git a/config/BoardConfigKernel.mk b/config/BoardConfigKernel.mk
+index 3a177b44..a3ff50c9 100644
+--- a/config/BoardConfigKernel.mk
++++ b/config/BoardConfigKernel.mk
+@@ -130,6 +130,10 @@ ifneq ($(KERNEL_NO_GCC), true)
+     # arm toolchain
+     KERNEL_TOOLCHAIN_arm := $(GCC_PREBUILTS)/arm/arm-linux-androideabi-4.9/bin
+     KERNEL_TOOLCHAIN_PREFIX_arm := arm-linux-androidkernel-
++    # LOS22.2 dora: use the installed ARM32 toolchain prefix.
++    ifeq ($(TARGET_DEVICE),dora)
++        KERNEL_TOOLCHAIN_PREFIX_arm := arm-linux-androideabi-
++    endif
+     # x86 toolchain
+     KERNEL_TOOLCHAIN_x86 := $(GCC_PREBUILTS)/x86/x86_64-linux-android-4.9/bin
+     KERNEL_TOOLCHAIN_PREFIX_x86 := x86_64-linux-android-

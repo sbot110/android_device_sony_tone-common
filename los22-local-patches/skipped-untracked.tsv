@@ -1,0 +1,2 @@
+hardware/qcom/bt	msm8996/libbt-vendor/src/bt_vendor_qcom.c.pre-dora-v9-20261121-034101	UNKNOWN_TYPE
+system/memory/lmkd	lmkd.cpp.before-legacy44-20261121-030139	EXCLUDED_NAME

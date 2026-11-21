@@ -1,0 +1,136 @@
+diff --git a/lmkd.cpp b/lmkd.cpp
+index 54129c7..06c03a5 100644
+--- a/lmkd.cpp
++++ b/lmkd.cpp
+@@ -1839,6 +1839,109 @@ static int zoneinfo_parse_node(char **buf, struct zoneinfo_node *node) {
+     return false;
+ }
+ 
++// Sony MSM8996 / Linux 4.4: file-LRU counters are per-zone, not per-node.
++// Keep the Android 15 parser for current kernels; use this only when the
++// first line after a zone header begins with "pages free".
++static int zoneinfo_parse_legacy_44(char *buf, struct zoneinfo *zi) {
++    enum : unsigned {
++        LEGACY_FREE       = 1u << 0,
++        LEGACY_MIN        = 1u << 1,
++        LEGACY_LOW        = 1u << 2,
++        LEGACY_HIGH       = 1u << 3,
++        LEGACY_PRESENT    = 1u << 4,
++        LEGACY_CMA        = 1u << 5,
++        LEGACY_INACTIVE   = 1u << 6,
++        LEGACY_ACTIVE     = 1u << 7,
++        LEGACY_PROTECTION = 1u << 8,
++        LEGACY_REQUIRED   = (1u << 9) - 1u,
++    };
++
++    unsigned int seen[MAX_NR_NODES][MAX_NR_ZONES] = {};
++    struct zoneinfo_node *node = nullptr;
++    struct zoneinfo_zone *zone = nullptr;
++    int node_index = -1;
++    int zone_index = -1;
++    char *save_ptr;
++
++    for (char *line = strtok_r(buf, "\n", &save_ptr); line;
++         line = strtok_r(NULL, "\n", &save_ptr)) {
++        int id;
++        char zone_name[LINE_MAX + 1];
++        if (sscanf(line, "Node %d, zone %" STRINGIFY(LINE_MAX) "s", &id, zone_name) == 2) {
++            if (id < 0) return -1;
++            if (node == nullptr || node->id != id) {
++                if (zi->node_count >= MAX_NR_NODES) return -1;
++                node_index = zi->node_count++;
++                node = &zi->nodes[node_index];
++                node->id = id;
++            }
++            if (node->zone_count >= MAX_NR_ZONES) return -1;
++            zone_index = node->zone_count++;
++            zone = &node->zones[zone_index];
++            continue;
++        }
++        if (zone == nullptr) continue;
++
++        char *protection = strstr(line, "protection:");
++        if (protection != nullptr) {
++            zoneinfo_parse_protection(protection + strlen("protection:"), zone);
++            seen[node_index][zone_index] |= LEGACY_PROTECTION;
++            continue;
++        }
++
++        long long val;
++        if (sscanf(line, " pages free %lld", &val) == 1) {
++            if (val < 0) return -1;
++            zone->fields.field.nr_free_pages = val;
++            seen[node_index][zone_index] |= LEGACY_FREE;
++            continue;
++        }
++
++        char key[64];
++        if (sscanf(line, " %63s %lld", key, &val) != 2) continue;
++        unsigned int bit = 0;
++        if (!strcmp(key, "min")) {
++            zone->fields.field.min = val;
++            bit = LEGACY_MIN;
++        } else if (!strcmp(key, "low")) {
++            zone->fields.field.low = val;
++            bit = LEGACY_LOW;
++        } else if (!strcmp(key, "high")) {
++            zone->fields.field.high = val;
++            bit = LEGACY_HIGH;
++        } else if (!strcmp(key, "present")) {
++            zone->fields.field.present = val;
++            bit = LEGACY_PRESENT;
++        } else if (!strcmp(key, "nr_free_cma")) {
++            zone->fields.field.nr_free_cma = val;
++            bit = LEGACY_CMA;
++        } else if (!strcmp(key, "nr_inactive_file")) {
++            node->fields.field.nr_inactive_file += val;
++            bit = LEGACY_INACTIVE;
++        } else if (!strcmp(key, "nr_active_file")) {
++            node->fields.field.nr_active_file += val;
++            bit = LEGACY_ACTIVE;
++        }
++        if (bit != 0 && val < 0) return -1;
++        seen[node_index][zone_index] |= bit;
++    }
++
++    if (zi->node_count == 0) return -1;
++    for (int i = 0; i < zi->node_count; ++i) {
++        struct zoneinfo_node *curr = &zi->nodes[i];
++        if (curr->zone_count == 0) return -1;
++        for (int j = 0; j < curr->zone_count; ++j) {
++            if ((seen[i][j] & LEGACY_REQUIRED) != LEGACY_REQUIRED) return -1;
++            const struct zoneinfo_zone *curr_zone = &curr->zones[j];
++            zi->totalreserve_pages +=
++                    curr_zone->max_protection + curr_zone->fields.field.high;
++        }
++        zi->total_inactive_file += curr->fields.field.nr_inactive_file;
++        zi->total_active_file += curr->fields.field.nr_active_file;
++    }
++    return 0;
++}
++
+ static int zoneinfo_parse(struct zoneinfo *zi) {
+     static struct reread_data file_data = {
+         .filename = ZONEINFO_PATH,
+@@ -1858,6 +1961,21 @@ static int zoneinfo_parse(struct zoneinfo *zi) {
+         return -1;
+     }
+ 
++    // Linux 4.4 emits "pages free" immediately after the first zone header.
++    // Modern kernels emit per-node counters there. Select by actual format.
++    const char *first_zone_line = strchr(buf, '\n');
++    if (first_zone_line != nullptr) {
++        const char *stat = first_zone_line + 1;
++        while (*stat == ' ' || *stat == '\t') ++stat;
++        if (strncmp(stat, "pages free ", strlen("pages free ")) == 0) {
++            if (zoneinfo_parse_legacy_44(buf, zi) < 0) {
++                ALOGE("%s legacy 4.4 parse error", file_data.filename);
++                return -1;
++            }
++            return 0;
++        }
++    }
++
+     for (line = strtok_r(buf, "\n", &save_ptr); line;
+          line = strtok_r(NULL, "\n", &save_ptr)) {
+         int node_id;

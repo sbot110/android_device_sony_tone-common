@@ -44,8 +44,6 @@ bluetooth.profile.pan.nap.enabled?=true
 bluetooth.profile.pan.panu.enabled?=true
 bluetooth.profile.pbap.server.enabled?=true
 bluetooth.profile.sap.server.enabled?=true
-vendor.qcom.bluetooth.soc=rome
-
 # Camera Debug
 persist.camera.hal.debug=0
 persist.camera.kpi.debug=0

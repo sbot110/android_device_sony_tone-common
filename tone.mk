@@ -43,6 +43,7 @@ TARGET_SCREEN_WIDTH := 1080
 
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += device/sony/tone-common
+PRODUCT_SOONG_NAMESPACES += hardware/broadcom/libbt
 
 # Permissions
 PRODUCT_COPY_FILES += \
@@ -98,7 +99,6 @@ PRODUCT_PACKAGES += \
     audio.primary.msm8996 \
     audio.r_submix.default \
     audio.usb.default \
-    libaacwrapper \
     libaudio-resampler \
     libaudioroute \
     libqcompostprocbundle \
@@ -124,6 +124,8 @@ PRODUCT_COPY_FILES += \
     frameworks/av/services/audiopolicy/config/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml
 
 # Bluetooth
+# DORA_V10_BRCM_SOONG_CONFIG
+$(call soong_config_set,brcm_libbt,custom_bt_config,//device/sony/tone-common:dora_v10_bt_config)
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.0.vendor \
     android.hardware.bluetooth@1.0-impl \
@@ -172,9 +174,9 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@2.0-impl \
     android.hardware.memtrack@1.0-impl \
     android.hardware.memtrack@1.0-service \
-    gralloc.msm8996 \
-    hwcomposer.msm8996 \
     memtrack.msm8996 \
+    gralloc.msm8996 \
+    hwcomposer.qcom \
     libdisplayconfig \
     libqdMetaData.system \
     libtinyxml \
@@ -192,7 +194,7 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-impl \
     android.hardware.drm@1.0-service \
     android.hardware.drm@1.1.vendor \
-    android.hardware.drm@1.4-service.clearkey
+    android.hardware.drm-service.clearkey
 
 # Fingerprint
 PRODUCT_PACKAGES += \
@@ -253,7 +255,7 @@ PRODUCT_PACKAGES += \
 
 # Inherit several Android Go Configurations(Beneficial for everyone, even on non-Go devices)
 PRODUCT_USE_PROFILE_FOR_BOOT_IMAGE := true
-PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION := frameworks/base/config/boot-image-profile.txt
+# LOS22.2: obsolete profile path - PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION := frameworks/base/config/boot-image-profile.txt
 
 # Input
 PRODUCT_COPY_FILES += \
@@ -307,19 +309,13 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.nfc@1.1-service \
     com.android.nfc_extras \
-    NfcNci \
     SecureElement \
     Tag
 
 # OMX
 PRODUCT_PACKAGES += \
     libc2dcolorconvert \
-    libOmxAacEnc \
-    libOmxAmrEnc \
     libOmxCore \
-    libOmxEvrcEnc \
-    libOmxG711Enc \
-    libOmxQcelp13Enc \
     libOmxVdec \
     libOmxVenc \
     libstagefrighthw
@@ -427,9 +423,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     thermanager
 
-# Trust HAL
-PRODUCT_PACKAGES += \
-    vendor.lineage.trust@1.0-service
+# Trust HAL: legacy service unavailable in LOS21.
+# Revisit functionality before release.
 
 # USB
 PRODUCT_PACKAGES += \
@@ -441,11 +436,10 @@ PRODUCT_EXTRA_VNDK_VERSIONS := 28 29 30
 
 $(foreach target, $(shell cat $(LOCAL_PATH)/vndk.txt), $(eval PRODUCT_PACKAGES += $(target).vendor))
 
-PRODUCT_PACKAGES += \
-    vndk_package
+# LOS22.2: legacy vndk_package module removed.
 
-PRODUCT_COPY_FILES += \
-    prebuilts/vndk/v29/arm64/arch-arm64-armv8-a/shared/vndk-core/libprotobuf-cpp-lite.so:$(TARGET_COPY_OUT_VENDOR)/lib64/libprotobuf-cpp-lite-v29.so
+# LOS22.2: libprotobuf-cpp-lite-v29 is installed
+# by hardware/lineage/compat for ARM32 and ARM64.
 
 # Vibrator
 PRODUCT_PACKAGES += \
@@ -454,7 +448,7 @@ PRODUCT_PACKAGES += \
 
 # WiFi
 PRODUCT_PACKAGES += \
-    android.hardware.wifi@1.0-service \
+    android.hardware.wifi-service \
     hostapd \
     libcld80211 \
     libwifi-hal-bcm \
@@ -470,6 +464,29 @@ PRODUCT_COPY_FILES += \
 # WiFi BCM configurations
 $(call inherit-product, hardware/broadcom/wlan/bcmdhd/config/config-bcm.mk)
 
-# Variant linking script
-PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/releasetools/updater.sh:install/bin/updater.sh
+# Legacy OEM variant updater excluded: OEM contains read-only SquashFS Vendor.
+
+# Select the Sony/Qualcomm Adreno EGL implementation.
+PRODUCT_VENDOR_PROPERTIES += ro.hardware.egl=adreno
+
+# DORA21: compatibility library for legacy Qualcomm RIL
+PRODUCT_PACKAGES += \
+    libprotobuf-cpp-full-3.9.1-vendorcompat
+
+# DORA21: legacy Qualcomm HIDL ABI compatibility
+PRODUCT_PACKAGES += \
+    libhidlbase_shim
+
+# LOS22 dora: legacy Qualcomm RIL/network dependencies
+ifeq ($(TARGET_DEVICE),dora)
+PRODUCT_PACKAGES += \
+    libsqlite.vendor \
+    libnetutils.vendor
+endif
+
+# BEGIN DORA_LOS22_V11_LMKD_MINFREE
+# Android 15 / Sony 4.4: use vmpressure minfree thresholds without memsw statistic.
+# Experiment only: retain v10 ZIP for rollback and validate app retention.
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.lmk.use_minfree_levels=true
+# END DORA_LOS22_V11_LMKD_MINFREE
